@@ -1,0 +1,12 @@
+{
+  "name": "sourav-skills",
+  "version": "1.0.0",
+  "description": "Sourav's agent skills: study notes and tutorials, DSA practice, notebook and course-repo cleanup, site planning and audits, Python env, and skill-library cleanup.",
+  "author": {
+    "name": "Sourav692",
+    "url": "https://github.com/Sourav692"
+  },
+  "repository": "https://github.com/Sourav692/skills",
+  "license": "MIT",
+  "keywords": ["skills", "study-notes", "dsa", "notebooks", "course-repos", "websites"]
+}

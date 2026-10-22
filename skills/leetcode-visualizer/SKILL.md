@@ -1,0 +1,135 @@
+---
+name: leetcode-visualizer
+description: Turn study notebooks (any problem notebook, or every notebook in any folder of the repo) into interactive, self-contained HTML explainers. For each problem it builds one HTML page with plain-language explanations and interactive step-through diagrams of the problem and every solution; then, when given a folder, it builds one final "patterns" HTML for that folder that summarizes the reusable patterns learned and how to use them in an interview. Invoke when the user asks to "make HTML", "visualize", "create diagrams", "interactive explainer", or "visual walkthrough" for a topic or problem.
+---
+
+# LeetCode Visual Explainer Generator
+
+Convert notebooks into **interactive HTML pages** a beginner can open in a browser and *play* with. The goal is understanding through animation and plain words — not walls of text or jargon.
+
+Two kinds of output:
+1. **One page per problem notebook** — explains the problem and each solution with interactive, step-through diagrams.
+2. **One "patterns" page per folder** (only when the input is a folder with 2+ notebooks) — the reusable patterns learned across its problems, in simple language, plus how to use each in an interview.
+
+## When to use
+
+- User asks to "make HTML / visualize / create interactive diagrams / visual walkthrough" for a folder or topic (e.g. `blind_75/Array/`, `outputs/`), a notebook path, or a problem name.
+- Runs **after** the notebooks exist (see the `leetcode-notebook` skill). Source the problem statement, the approaches, and the "Patterns Learned" straight from each notebook so the page and notebook agree.
+
+## Inputs
+
+- A **notebook path** → just its page.
+- A **problem name** → find its notebook (`git ls-files '*.ipynb' | grep -i '<slug>'`); if several match, ask which.
+- A **folder or topic name** (any folder: `blind_75/Tree/`, `deep_dive/18_Binary_Search/`, `outputs/`, …) → a page for every problem notebook under it, recursively (skip `*backup*` / `* copy*` notebooks), then the patterns page.
+- If the notebook is missing, say so and offer to generate it first with `leetcode-notebook` (which lands it in `outputs/<slug>/` unless told otherwise — the page then lands there too).
+
+## Output location & naming
+
+Pick the folder in this order, and state the paths before writing:
+
+1. **The user named an output folder** → write every page there.
+2. **Otherwise, next to the source:** each per-problem page goes next to its notebook with the same base name (`<dir>/<slug>.ipynb` → `<dir>/<slug>.html`). For a folder input, `patterns.html` and an `index.html` (linking every problem page by relative path, spaces as `%20`, plus the patterns page) go at the root of that folder.
+3. **Source notebook outside the repo, or pasted content** → `outputs/<slug>/<slug>.html` at the repo root.
+
+If pages landed inside a track (`blind_75/`, `deep_dive/`, `neetcode_150/`), run the `dsa-index-updater` skill afterwards; skip that for `outputs/`.
+- Do **not** overwrite an existing page without asking.
+
+## Hard technical rules (every HTML file)
+
+- **Fully self-contained & offline:** inline **all** CSS and JS in the one `.html`. **No external CDNs, no web fonts, no network calls** — it must work with no internet. Prefer **vanilla JS + inline SVG or `<canvas>`**; do not pull in D3/React/mermaid.
+- **Responsive & theme-aware:** readable on a laptop or phone; works in light and dark (respect `prefers-color-scheme`). Give `body` an explicit background and text color.
+- **No build step:** double-clicking the file must just work.
+- **Self-verify:** after writing, open the file and confirm the HTML is well-formed and the interactive controls are wired (see Build & verify).
+
+## Plain-language rule (most important)
+
+Write for someone new to the topic.
+- **No unnecessary jargon.** If a term is genuinely needed (e.g. "pointer", "hash map"), explain it in **one short sentence** the first time, using an everyday analogy.
+- Prefer verbs and pictures over definitions. Show *what happens*, then name it.
+- Short sentences. One idea per line. No paragraph longer than ~3 lines.
+- Every diagram has a one-line caption saying, in plain words, what the reader should notice.
+
+## Per-problem page structure
+
+Build the page in this order.
+
+1. **Header:** problem number + title, difficulty (colored dot), topic, and a link back to `index.html`.
+2. **"The problem in plain words":** 2–4 sentences, plus a tiny worked example the reader can relate to (use a real-world framing when it helps, e.g. "find two receipts that add up to the bill").
+3. **Interactive problem demo:** a small diagram of one example input the reader can step through to *feel* the task before any solution.
+4. **One interactive section per solution** (brute → better → optimal, matching the notebook):
+   - A plain-words idea (2–3 sentences: what it does and why it works).
+   - An **interactive step-through diagram** (controls below) that animates the algorithm on a sample input, highlighting the current state at each step (which items are compared, what's stored, which pointer moved, what got ruled out).
+   - A one-line **speed & memory** note in plain words ("checks every pair, so it gets slow fast" alongside the Big-O).
+   - A **static step-by-step trace table** right under the speed note (see below) — required for every solution, not just the optimal one.
+5. **"When you'd use this":** one or two lines on the signal that suggests this approach.
+
+### Step-by-step trace table (required, per solution)
+
+In addition to the interactive stepper, add a plain `<table>` that lays out the *entire* run of that approach on the same sample input, in the same style as the trace tables in the `*_explained.md` files next to the notebooks (e.g. `blind_75/Graph/Group 1 - Grid Flood Field & Connectivity/number_of_islands_explained.md`). This gives a reader something to scan/screenshot without pressing buttons.
+
+- One row per step/iteration; one column per state variable that changes (`i`, `j`, pointer positions, current value, running total, map/set contents, etc.) — pick columns that match that specific solution's mechanics, not a fixed template.
+- Last column states the decision made that step, in plain words (e.g. "Too small → lo++", "Not in map yet → store and continue").
+- Mark the final/answer row visually distinct (a `final` row class or similar) so the reader's eye lands on the answer.
+- Values must come from actually tracing the code on the sample input used by the interactive demo above it — do not fabricate a trace that doesn't match.
+- Markup/CSS pattern to reuse (keep it self-contained, no new dependencies):
+  ```html
+  <div class="trace-title">Step-by-step trace — nums = [2, 7, 11, 15], target = 26</div>
+  <div class="trace-wrap">
+  <table class="trace">
+    <tr><th>Step</th><th>i</th><th>...</th></tr>
+    <tr><td>1</td><td>0</td><td>...</td></tr>
+    <tr class="final"><td>...</td></tr>
+  </table>
+  </div>
+  ```
+  ```css
+  .trace-title{font-size:13px;color:var(--muted);font-weight:600;margin:16px 0 6px}
+  .trace-wrap{overflow-x:auto}
+  table.trace{border-collapse:collapse;width:100%;font-size:13.5px;min-width:480px}
+  table.trace th,table.trace td{border:1px solid var(--border);padding:6px 10px;text-align:center;white-space:nowrap}
+  table.trace th{background:var(--accent-soft);color:var(--fg);font-weight:600}
+  table.trace tr.final td{background:var(--good);border-color:var(--good-bd);font-weight:700}
+  ```
+  (Reuse whatever theme variables the page already defines for `--muted`/`--border`/`--accent-soft`/`--good`/`--good-bd` — don't hardcode colors that break dark mode.)
+
+### Interactive controls (required for each diagram)
+Provide at minimum: **Prev**, **Next**, **Play/Pause**, **Reset**, and a **step counter / caption** that updates to explain the current step in one plain sentence. Optional: a small input the reader can change (e.g. edit the array) and re-run. Keep the step model simple: precompute an ordered list of "frames" (state snapshots), and the buttons just move an index through them.
+
+### How to visualize common techniques
+- **Two pointers:** a row of boxes; two colored arrows that move; shade the region being considered; caption why a pointer moved.
+- **Hash map / set:** the array on top, a growing "memory" table below; highlight the lookup ("have I seen its partner?") and the insert.
+- **Sliding window:** a highlighted band over the array that grows/shrinks; show the running total.
+- **Binary search:** show `low`/`mid`/`high`; grey out the half that gets discarded each step.
+- **Dynamic programming:** a table (1-D or 2-D) that fills cell by cell; arrows from the cells a value depends on.
+- **Recursion / divide & conquer:** a tree that expands as it recurses and collapses as it returns values.
+- **Graph / grid (DFS/BFS):** nodes/cells that change color as they're visited; show the stack/queue beside them.
+Pick the one that matches each solution; the point is to make the *mechanism* visible, not to be fancy.
+
+## Final patterns page (`patterns.html`)
+
+Built after all problem pages. It is the topic's "cheat sheet you actually understand".
+
+- **Intro:** one short paragraph — what this topic is really about, in plain words.
+- **One card per pattern** found across the topic's "Patterns Learned" (dedupe similar ones). Each card, in simple language:
+  - **Name** of the pattern + a one-line "what it is" analogy.
+  - **The tell:** how to recognize in an interview that this pattern applies (the words/shape in the question that hint at it).
+  - **How it works:** 2–3 lines, ideally with a tiny inline diagram or animation reused from the problem pages.
+  - **Problems here that use it:** links to those problem pages.
+  - **How to say it in an interview:** a sample sentence the reader could actually speak ("I notice we're searching for a pair, so I'll use a hash map to look up the partner in one step, which makes this linear time.").
+- **Optional interactive:** tabs or a filter to jump between patterns; a small "pattern → problems" map.
+- **Interview tips (plain):** a short closing list — how to spot which pattern to reach for, and what to say out loud while solving.
+
+## Build & verify
+
+- Write each `.html` with the Write tool.
+- **Verify** every file before finishing: confirm it exists, parse/lint the markup (e.g. load it and check the tags balance), and check that the control elements and their JS handlers are present (search the file for the button ids and the functions they call). Fix anything that isn't wired.
+- Confirm every solution section has both the interactive stepper **and** a `table.trace` with a `final` row, and that the traced values match what the interactive demo computes for the same input.
+- Report the list of files created and their paths, and offer to open the `index.html`.
+
+## Quality bar
+
+- Opens offline, no console errors, controls actually step the diagram.
+- Language stays simple — re-read and cut jargon; every needed term is explained once.
+- Page content matches the notebook (same approaches, same complexities, same patterns).
+- Looks clean in light and dark; usable on a phone.
+- The patterns page is genuinely useful as pre-interview revision, not a data dump.

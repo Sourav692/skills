@@ -1,0 +1,17 @@
+{
+  "name": "sourav692",
+  "owner": {
+    "name": "Sourav692",
+    "url": "https://github.com/Sourav692"
+  },
+  "description": "Sourav's skills as an installable Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "sourav-skills",
+      "source": "./",
+      "description": "All of Sourav's agent skills in one plugin.",
+      "category": "productivity",
+      "keywords": ["skills", "study-notes", "dsa", "notebooks", "websites"]
+    }
+  ]
+}
